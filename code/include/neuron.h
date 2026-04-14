@@ -33,14 +33,18 @@ void initNetwork(int* layerSizes, int numLayers, Network* network);
 
 void updateLayer(Layer* layer, Layer* nextLayer);
 void updateLayerInference(Layer* layer, Layer* prevLayer);
+void updateInputLayerInference(Layer* layer);
 void updateLayerWeights(Layer* layer, Layer* nextLayer);
 
+void randomizeLayerLatents(Layer* layer);
+
 void updateNetwork(Network* network);
-void updateNetworkInference(Network* network);
+void updateNetworkInference(Network* network, char updateInput);
 void updateNetworkWeights(Network* network);
 
 void setNetworkInputs(Network* network, float* inputs);
 void setNetworkOutputs(Network* network, float* outputs);
+void randomizeNetworkLatents(Network* network);
 
 float getLoss(Network* network);
 

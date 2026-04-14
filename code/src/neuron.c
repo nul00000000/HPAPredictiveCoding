@@ -1,10 +1,11 @@
 #include "neuron.h"
+#include <stdlib.h>
 
 void initNeuron(Neuron* n) {
     n->a = 0;
     n->err = 0;
     n->xh = 0;
-    n->x = ((float) rand() / RAND_MAX) * 2.0f - 1.0f;
+    n->x = ((float) rand() / RAND_MAX);
 }
 
 void initLayer(int numUpper, int numLower, Layer* layer) {
@@ -41,6 +42,14 @@ float dfdx(float x) {
     return enx / ((1 + enx) * (1 + enx));
 }
 
+// float f(float x) {
+//     return x;
+// }
+
+// float dfdx(float x) {
+//     return 1;
+// }
+
 void updateLayer(Layer* layer, Layer* nextLayer) {
     for(int i = 0; i < layer->numLower; i++) {
         layer->lower[i].a = 0;
@@ -52,25 +61,39 @@ void updateLayer(Layer* layer, Layer* nextLayer) {
     }
 }
 
+//prev layer is the layer closer to input
 void updateLayerInference(Layer* layer, Layer* prevLayer) {
-    for(int i = 0; i < layer->numLower; i++) {
+    for(int i = 0; i < prevLayer->numUpper; i++) {
         float n = 0;
         for(int j = 0; j < prevLayer->numLower; j++) {
             //gain modulated error
             float h = dfdx(prevLayer->lower[j].a) * prevLayer->lower[j].err;
-            n += prevLayer->weights[j * layer->numLower + i] * h;
+            n += prevLayer->weights[j * prevLayer->numUpper + i] * h;
         }
         layer->lower[i].x -= IR * (layer->lower[i].err - n);
     }
 }
 
+void updateInputLayerInference(Layer* layer) {
+    for(int i = 0; i < layer->numLower; i++) {
+        layer->lower[i].x -= IR * (layer->lower[i].err);
+    }
+}
+
+//next layer is layer closer to output
 void updateLayerWeights(Layer *layer, Layer *nextLayer) {
     for(int i = 0; i < layer->numLower; i++) {
         for(int j = 0; j < layer->numUpper; j++) {
             //gain modulated error
-            float h = dfdx(layer->lower[j].a) * layer->lower[j].err;
+            float h = dfdx(layer->lower[i].a) * layer->lower[i].err;
             layer->weights[i * layer->numUpper + j] += LR * h * nextLayer->lower[j].x;
         }
+    }
+}
+
+void randomizeLayerLatents(Layer *layer) {
+    for(int i = 0; i < layer->numLower; i++) {
+        layer->lower[i].x = ((float) rand() / RAND_MAX) * 0.2 + 0.4;
     }
 }
 
@@ -80,10 +103,11 @@ void updateNetwork(Network* network) {
     }
 }
 
-void updateNetworkInference(Network* network) {
+void updateNetworkInference(Network* network, char updateInput) {
     for(int i = 1; i < network->numLayers; i++) {
         updateLayerInference(&network->layers[i], &network->layers[i - 1]);
     }
+    if(updateInput) updateInputLayerInference(&network->layers[0]);
 }
 
 void updateNetworkWeights(Network* network) {
@@ -103,6 +127,12 @@ void setNetworkInputs(Network* network, float* inputs) {
     Layer* top = &network->layers[0];
     for(int i = 0; i < top->numLower; i++) {
         top->lower[i].x = inputs[i];
+    }
+}
+
+void randomizeNetworkLatents(Network* network) {
+    for(int i = 0; i < network->numLayers; i++) {
+        randomizeLayerLatents(&network->layers[i]);
     }
 }
 
@@ -131,9 +161,10 @@ void printNetwork(Network* network) {
 }
 
 void evaluateNetwork(Network* network, float* input, float* output, int numIters) {
+    randomizeNetworkLatents(network);
     for(int i = 0; i < numIters; i++) {
         setNetworkInputs(network, input);
-        updateNetworkInference(network);
+        updateNetworkInference(network, 0);
         updateNetwork(network);
     }
     for(int i = 0; i < network->layers[network->numLayers - 1].numLower; i++) {
