@@ -7,7 +7,7 @@ include extra.make
 all: $(OUT)
 
 $(OUT): $(FILES)
-	nvcc -ccbin $(CCBIN) -o $(OUT) $(FILES) -Iinclude
+	nvcc -ccbin $(CCBIN) -o $(OUT) $(FILES) -Iinclude -lm
 
 run: $(OUT)
 	./$(OUT) > output/out.txt
