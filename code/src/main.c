@@ -68,21 +68,22 @@ void printSimpleNet(Network* network) {
 
 int main() {
     Network network;
-    int layerSizes[4] = {100, 70, 30, 30};
+    int layerSizes[4] = {2, 50, 50, 1};
     float output[1] = {0};
-    float input[100];
+    float input[2] = {0, 0};
     initNetwork(layerSizes, 4, &network);
     updateNetwork(&network);
-    for(int j = 0; j < 100; j++) {
-        input[j] = (float) j / 100.0f;
-    }
     randomizeNetworkLatents(&network);
-    for(int i = 0; i < 5000; i++) {
-        // output[0] = (float) (a ^ b);
-        // randomizeNetworkLatents(&network);
+    for(int i = 0; i < 30000; i++) {
+        int a = rand() % 2;
+        int b = rand() % 2;
+        input[0] = (float) a;
+        input[1] = (float) b;
+        output[0] = (float) (a ^ b);
+        randomizeNetworkLatents(&network);
         for(int j = 0; j < 100; j++) {
             setNetworkInputs(&network, input);
-            // setNetworkOutputs(&network, output);
+            setNetworkOutputs(&network, output);
             updateNetwork(&network);
             updateNetworkInference(&network, 0);
         }
@@ -90,50 +91,53 @@ int main() {
         // printf("%3d Loss: %f\n", j, getLoss(&network));
         // if(i % 100 == 0)
         //     printf("Gen %d.%d Loss: %f\n", i, j, getLoss(&network));
+        setNetworkInputs(&network, input);
+        setNetworkOutputs(&network, output);
+        updateNetwork(&network);
         updateNetworkWeights(&network);
-        // if(i % 10000 == 0)
+        if(i % 1000 == 0)
             printf("Gen %d Loss: %f\n", i, getLoss(&network));
     }
     printf("Loss: %f\n", getLoss(&network));
 
-    randomizeNetworkLatents(&network);
+    // randomizeNetworkLatents(&network);
 
-    for(int j = 0; j < 400; j++) {
-        updateNetwork(&network);
-        updateNetworkInference(&network, 1);
-    }
+    // for(int j = 0; j < 400; j++) {
+    //     updateNetwork(&network);
+    //     updateNetworkInference(&network, 1);
+    // }
 
-    for(int i = 0; i < 100; i++) {
-        printf("%.3f, ", network.layers[0].lower[i].x);
-    }
-    printf("\n");
+    // for(int i = 0; i < 100; i++) {
+    //     printf("%.3f, ", network.layers[0].lower[i].x);
+    // }
+    // printf("\n");
 
-    // input[0] = 0;
-    // input[1] = 0;
-    // printf("Input: 00, ");
-    // evaluateNetwork(&network, input, output, 1000000);
-    // printf("Output: %f\n", output[0]);
-    // printf("Loss: %f\n", getLoss(&network));
+    input[0] = 0;
+    input[1] = 0;
+    printf("Input: 00, ");
+    evaluateNetwork(&network, input, output, 100);
+    printf("Output: %f\n", output[0]);
+    printf("Loss: %f\n", getLoss(&network));
 
-    // input[0] = 1;
-    // input[1] = 0;
-    // printf("Input: 01, ");
-    // evaluateNetwork(&network, input, output, 1000000);
-    // printf("Output: %f\n", output[0]);
-    // printf("Loss: %f\n", getLoss(&network));
+    input[0] = 1;
+    input[1] = 0;
+    printf("Input: 01, ");
+    evaluateNetwork(&network, input, output, 100);
+    printf("Output: %f\n", output[0]);
+    printf("Loss: %f\n", getLoss(&network));
 
-    // input[0] = 0;
-    // input[1] = 1;
-    // printf("Input: 10, ");
-    // evaluateNetwork(&network, input, output, 1000000);
-    // printf("Output: %f\n", output[0]);
-    // printf("Loss: %f\n", getLoss(&network));
+    input[0] = 0;
+    input[1] = 1;
+    printf("Input: 10, ");
+    evaluateNetwork(&network, input, output, 100);
+    printf("Output: %f\n", output[0]);
+    printf("Loss: %f\n", getLoss(&network));
 
-    // input[0] = 1;
-    // input[1] = 1;
-    // printf("Input: 11, ");
-    // evaluateNetwork(&network, input, output, 1000000);
-    // printf("Output: %f\n", output[0]);
-    // printf("Loss: %f\n", getLoss(&network));
+    input[0] = 1;
+    input[1] = 1;
+    printf("Input: 11, ");
+    evaluateNetwork(&network, input, output, 100);
+    printf("Output: %f\n", output[0]);
+    printf("Loss: %f\n", getLoss(&network));
 
 }

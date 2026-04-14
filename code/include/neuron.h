@@ -6,7 +6,7 @@
 #include <math.h>
 
 #define IR (0.01)
-#define LR (0.01)
+#define LR (0.1)
 
 typedef struct neuron {
     float a;
