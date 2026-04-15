@@ -1,4 +1,4 @@
-FILES = src/main.c src/neuron.c
+FILES = src/main.c src/neuron.c src/lodepng.c
 INCLUDE = include
 OUT = main
 
