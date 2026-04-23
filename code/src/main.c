@@ -86,62 +86,25 @@ int main() {
 
     Network network;
     int layerSizes[4] = {32*32, 100, 20, 5};
-    float output[1] = {0};
-    // float input[100];
     initNetwork(layerSizes, 4, &network);
-    updateNetwork(&network);
-    randomizeNetworkLatents(&network);
-    for(int i = 0; i < 1000; i++) {
-        // int c = rand() % 100;
-        // c = rand() % 100;
-        // for(int i = 0; i < 100; i++) {
-        //     int di = c - i;
-        //     if(di > 50) di -= 100;
-        //     if(di <= -50) di += 100;
-        //     input[i] = di * di * 0.0002f;
-        // }
-        int c = rand() % 16;
-        randomizeNetworkLatents(&network);
-        for(int j = 0; j < 100; j++) {
-            setNetworkInputs(&network, images[c]);
-            // setNetworkOutputs(&network, output);
-            updateNetwork(&network);
-            updateNetworkInference(&network, 0);
-        }
-        // printNetwork(&network);
-        // printf("%3d Loss: %f\n", j, getLoss(&network));
-        // if(i % 100 == 0)
-        //     printf("Gen %d.%d Loss: %f\n", i, j, getLoss(&network));
-        setNetworkInputs(&network, images[c]);
-        // setNetworkOutputs(&network, output);
-        updateNetwork(&network);
-        updateNetworkWeights(&network);
-        if(i % 100 == 0) {
-            printf("Gen %d Loss: %f\n", i, getLoss(&network));
-            randomizeNetworkLatents(&network);
+    
+    for(int i = 0; i < 10; i++) {
+        trainNetwork(&network, images, 16, 100, 100);
+        printf("Gen %d Loss: %f\n", i * 100, getLoss(&network));
+        
+        generateOutput(&network, 4000);
 
-            for(int j = 0; j < 4000; j++) {
-                updateNetwork(&network);
-                updateNetworkInference(&network, 1);
+        for(int i = 0; i < 32; i++) {
+            for(int j = 0; j < 32; j++) {
+                imageout[i * 32 + j] = network.layers[0].lower[i * 32 + j].x;
             }
-            for(int i = 0; i < 32; i++) {
-                for(int j = 0; j < 32; j++) {
-                    imageout[i * 32 + j] = network.layers[0].lower[i * 32 + j].x;
-                }
-            }
-            char name[30];
-            sprintf(name, "../obamasout/%03d.png", i/100);
-            encode(name, imageout);
         }
+        char name[30];
+        sprintf(name, "../obamasout/%03d.png", i);
+        encode(name, imageout);
     }
-    printf("Loss: %f\n", getLoss(&network));
 
-    randomizeNetworkLatents(&network);
-
-    for(int j = 0; j < 4000; j++) {
-        updateNetwork(&network);
-        updateNetworkInference(&network, 1);
-    }
+    generateOutput(&network, 4000);
 
     for(int i = 0; i < 32; i++) {
         for(int j = 0; j < 32; j++) {
@@ -149,34 +112,6 @@ int main() {
         }
     }
     encode("../obamasout/final.png", imageout);
-
-    // input[0] = 0;
-    // input[1] = 0;
-    // printf("Input: 00, ");
-    // evaluateNetwork(&network, input, output, 100);
-    // printf("Output: %f\n", output[0]);
-    // printf("Loss: %f\n", getLoss(&network));
-
-    // input[0] = 1;
-    // input[1] = 0;
-    // printf("Input: 01, ");
-    // evaluateNetwork(&network, input, output, 100);
-    // printf("Output: %f\n", output[0]);
-    // printf("Loss: %f\n", getLoss(&network));
-
-    // input[0] = 0;
-    // input[1] = 1;
-    // printf("Input: 10, ");
-    // evaluateNetwork(&network, input, output, 100);
-    // printf("Output: %f\n", output[0]);
-    // printf("Loss: %f\n", getLoss(&network));
-
-    // input[0] = 1;
-    // input[1] = 1;
-    // printf("Input: 11, ");
-    // evaluateNetwork(&network, input, output, 100);
-    // printf("Output: %f\n", output[0]);
-    // printf("Loss: %f\n", getLoss(&network));
 
     for(int i = 0; i < 16; i++) {
         free(images[i]);

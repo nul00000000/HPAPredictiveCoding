@@ -160,14 +160,38 @@ void printNetwork(Network* network) {
     }
 }
 
+void trainNetwork(Network* network, float** inputs, int numSamples, 
+        int numLearnIters, int numInferIters) {
+    for(int i = 0; i < numLearnIters; i++) {
+        int c = rand() % numSamples;
+        randomizeNetworkLatents(network);
+        for(int j = 0; j < numInferIters; j++) {
+            setNetworkInputs(network, inputs[c]);
+            updateNetwork(network);
+            updateNetworkInference(network, 0);
+        }
+        setNetworkInputs(network, inputs[c]);
+        updateNetwork(network);
+        updateNetworkWeights(network);
+    }
+}
+
 void evaluateNetwork(Network* network, float* input, float* output, int numIters) {
     randomizeNetworkLatents(network);
     for(int i = 0; i < numIters; i++) {
         setNetworkInputs(network, input);
-        updateNetworkInference(network, 0);
         updateNetwork(network);
+        updateNetworkInference(network, 0);
     }
     for(int i = 0; i < network->layers[network->numLayers - 1].numLower; i++) {
         output[i] = network->layers[network->numLayers - 1].lower[i].x;
+    }
+}
+
+void generateOutput(Network* network, int numIters) {
+    randomizeNetworkLatents(network);
+    for(int i = 0; i < numIters; i++) {
+        updateNetwork(network);
+        updateNetworkInference(network, 1);
     }
 }

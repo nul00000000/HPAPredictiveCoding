@@ -51,6 +51,8 @@ float getLoss(Network* network);
 void printLayer(Layer* layer);
 void printNetwork(Network* network);
 
+void trainNetwork(Network* network, float** inputs, int numSamples, int numLearnIters, int numInferIters);
 void evaluateNetwork(Network* network, float* inputs, float* output, int numIters);
+void generateOutput(Network* network, int numIters);
 
 #endif
