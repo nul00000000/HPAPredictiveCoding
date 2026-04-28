@@ -33,6 +33,18 @@ void initNetwork(int* layerSizes, int numLayers, Network* network) {
     initLayer(0, layerSizes[numLayers - 1], &network->layers[numLayers - 1]);
 }
 
+void freeLayer(Layer* layer) {
+    free(layer->lower);
+    free(layer->weights);
+}
+
+void freeNetwork(Network* network) {
+    for(int i = 0; i < network->numLayers; i++) {
+        freeLayer(&network->layers[i]);
+    }
+    free(network->layers);
+}
+
 float f(float x) {
     return 1.0f / (1.0f + exp(-x));
 }
@@ -93,7 +105,7 @@ void updateLayerWeights(Layer *layer, Layer *nextLayer) {
 
 void randomizeLayerLatents(Layer *layer) {
     for(int i = 0; i < layer->numLower; i++) {
-        layer->lower[i].x = ((float) rand() / RAND_MAX) * 0.2 + 0.4;
+        layer->lower[i].x = ((float) rand() / RAND_MAX) * RRANGE + RMIN;
     }
 }
 

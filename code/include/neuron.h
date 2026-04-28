@@ -8,28 +8,47 @@
 #define IR (0.01)
 #define LR (0.1)
 
-typedef struct neuron {
+#define RMIN (0.4f)
+#define RRANGE (0.2f)
+
+typedef struct {
     float a;
     float xh; //x hat, prediction of x
     float x; //latent value or input
     float err; //error
 } Neuron;
 
-typedef struct layer {
+typedef struct {
     int numUpper;
     int numLower;
     Neuron* lower;
     float* weights; //nullptr if top layer
 } Layer;
 
-typedef struct network {
+typedef struct {
     int numLayers;
     Layer* layers;
 } Network;
 
+typedef struct {
+    int numLayers;
+    int numNeurons;
+    int numWeights;
+    Neuron* neurons;
+    int* layerSizes;
+    int* layerOffsets;
+    int* weightOffsets;
+    float* weights;
+
+    void* randStates;
+} NetworkGPU;
+
 void initNeuron(Neuron* n);
 void initLayer(int numUpper, int numLower, Layer* layer);
 void initNetwork(int* layerSizes, int numLayers, Network* network);
+
+void freeLayer(Layer* layer);
+void freeNetwork(Network* network);
 
 void updateLayer(Layer* layer, Layer* nextLayer);
 void updateLayerInference(Layer* layer, Layer* prevLayer);
@@ -54,5 +73,20 @@ void printNetwork(Network* network);
 void trainNetwork(Network* network, float** inputs, int numSamples, int numLearnIters, int numInferIters);
 void evaluateNetwork(Network* network, float* inputs, float* output, int numIters);
 void generateOutput(Network* network, int numIters);
+
+//GPU stuff
+
+NetworkGPU* createNetworkGPU();
+void freeNetworkGPU(NetworkGPU* network);
+void copyNetworkToGPU(Network* from, NetworkGPU* to);
+void copyNetworkFromGPU(NetworkGPU* from, Network* to);
+
+void setNetworkInputsGPU(NetworkGPU* network, float* inputs);
+void setNetworkOutputsGPU(NetworkGPU* network, float* outputs);
+void randomizeNetworkLatentsGPU(NetworkGPU* network);
+
+void trainNetworkGPU(NetworkGPU* network, float** inputs, int numSamples, int numLearnIters, int numInferIters);
+void evaluateNetworkGPU(NetworkGPU* network, float* inputs, float* output, int numIters);
+void generateOutputGPU(NetworkGPU* network, int numIters);
 
 #endif
