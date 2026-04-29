@@ -220,15 +220,23 @@ void copyNetworkFromGPU(NetworkGPU from, Network* to) {
 // }
 
 extern "C"
-void trainNetworkGPU(NetworkGPU network, float** inputs, int numSamples, int numLearnIters, int numInferIters) {
+void trainNetworkGPU(NetworkGPU network, float** inputs, int inputSize, int numSamples, int numLearnIters, int numInferIters) {
 	dim3 grid = dim3((network.numNeurons + 511) / 512);
 	dim3 block = dim3(512);
+
+	//move input to GPU
+	float** inputs_d = (float**) malloc(numSamples * sizeof(float*));
+	for(int i = 0; i < numSamples; i++) {
+		cudaMalloc(inputs_d + i, sizeof(float) * inputSize);
+		cudaMemcpy(inputs_d[i], inputs[i], sizeof(float) * inputSize, cudaMemcpyHostToDevice);
+	}
+
 	for(int i = 0; i < numLearnIters; i++) {
 		int c = rand() % numSamples;
 		__randomizeNetworkLatentsGPU<<<grid, block>>>(network);
 		cudaDeviceSynchronize();
 		for(int j = 0; j < numInferIters; j++) {
-			__setNetworkInputs<<<grid, block>>>(network, inputs[c]);
+			__setNetworkInputs<<<grid, block>>>(network, inputs_d[c]);
 			cudaDeviceSynchronize();
 			updateNetworkGPU<<<grid, block>>>(network);
 			cudaDeviceSynchronize();
@@ -236,13 +244,18 @@ void trainNetworkGPU(NetworkGPU network, float** inputs, int numSamples, int num
 			cudaDeviceSynchronize();
 		}
 		//test if this is needed
-		__setNetworkInputs<<<grid, block>>>(network, inputs[c]);
+		__setNetworkInputs<<<grid, block>>>(network, inputs_d[c]);
 		cudaDeviceSynchronize();
 		updateNetworkGPU<<<grid, block>>>(network);
 		cudaDeviceSynchronize();
 		updateNetworkWeightsGPU<<<grid, block>>>(network);
 		cudaDeviceSynchronize();
 	}
+
+	for(int i = 0; i < numSamples; i++) {
+		cudaFree(inputs_d[i]);
+	}
+	free(inputs_d);
 }
 
 extern "C"

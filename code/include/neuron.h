@@ -84,7 +84,7 @@ void setNetworkInputsGPU(NetworkGPU network, float* inputs);
 void setNetworkOutputsGPU(NetworkGPU network, float* outputs);
 void randomizeNetworkLatentsGPU(NetworkGPU network);
 
-void trainNetworkGPU(NetworkGPU network, float** inputs, int numSamples, int numLearnIters, int numInferIters);
+void trainNetworkGPU(NetworkGPU network, float** inputs, int inputSize, int numSamples, int numLearnIters, int numInferIters);
 void evaluateNetworkGPU(NetworkGPU network, float* inputs, float* output, int numIters);
 void generateOutputGPU(NetworkGPU network, int numIters);
 

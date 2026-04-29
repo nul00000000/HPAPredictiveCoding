@@ -1,3 +1,4 @@
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -71,7 +72,21 @@ void print32x32Img(float* img) {
     }
 }
 
-int main() {
+void speedupTest() {
+    //must pregenerate inputs to not resend to gpu
+    float inputs[128][128];
+    for(int i = 0; i < 128; i++) {
+        for(int j = 0; j < 128; j++) {
+            inputs[i][j] = cosf((float) (j + i) / 128.0f * 3.14159f * 2);
+        }
+    }
+    for(int i = 0; i < 10; i++) {
+        int layers = 2 << i;
+        int* layerSizes = malloc(sizeof(int) * layers);
+    }
+}
+
+void demo() {
     float* images[16];
     float* imageout = (float*) malloc(32 * 32 * sizeof(float));
     for(int i = 0; i < 16; i++) {
@@ -110,7 +125,7 @@ int main() {
     NetworkGPU gnet;
     copyNetworkToGPU(&network, &gnet);
     for(int i = 0; i < 15; i++) {
-        trainNetworkGPU(gnet, images, 1, 400, 100);
+        trainNetworkGPU(gnet, images, 32*32, 1, 400, 100);
         copyNetworkFromGPU(gnet, &network);
 
         printf("Gen %d Loss: %f\n", i * 100, getLoss(&network));
@@ -173,5 +188,15 @@ int main() {
         free(images[i]);
     }
     free(imageout);
+}
+
+int main(int argc, char** argv) {
+    if(argc > 0){
+        if(strcmp(argv[0], "speedup")) {
+            demo();
+        } else {
+            speedupTest();
+        }
+    }
 
 }
