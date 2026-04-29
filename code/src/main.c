@@ -73,16 +73,74 @@ void print32x32Img(float* img) {
 }
 
 void speedupTest() {
+    printf("Running speedup test:\n");
     //must pregenerate inputs to not resend to gpu
-    float inputs[128][128];
+    float* inputs[128];
     for(int i = 0; i < 128; i++) {
+        inputs[i] = malloc(sizeof(float) * 128);
         for(int j = 0; j < 128; j++) {
             inputs[i][j] = cosf((float) (j + i) / 128.0f * 3.14159f * 2);
         }
     }
-    for(int i = 0; i < 10; i++) {
-        int layers = 2 << i;
+    for(int k = 0; k < 10; k++) {
+        int layers = 2 << k;
         int* layerSizes = malloc(sizeof(int) * layers);
+        for(int i = 0; i < layers; i++) {
+            layerSizes[i] = 128;
+        }
+        Network net;
+        initNetwork(layerSizes, layers, &net);
+        randomizeNetworkLatents(&net);
+
+        Network gnet;
+        initNetwork(layerSizes, layers, &gnet);
+        randomizeNetworkLatents(&gnet);
+        NetworkGPU net_d;
+        copyNetworkToGPU(&gnet, &net_d);
+        
+        float tcpu;
+        float tgpu;
+        float tcpuTrain;
+        float tgpuTrain;
+        clock_t start;
+        clock_t end;
+        
+        start = clock();
+        trainNetwork(&net, inputs, 128, 100, 100);
+        end = clock();
+        tcpuTrain = (float) (end - start) * 1000 / (float)CLOCKS_PER_SEC / 100;
+        
+        start = clock();
+        trainNetworkGPU(net_d, inputs, 128, 128, 100, 100);
+        end = clock();
+        tgpuTrain = (float) (end - start) * 1000 / (float)CLOCKS_PER_SEC / 100;
+        
+        start = clock();
+        generateOutput(&net, 4000);
+        end = clock();
+        tcpu = (float) (end - start) * 1000 / (float)CLOCKS_PER_SEC / 4000;
+
+        start = clock();
+        generateOutputGPU(net_d, 4000);
+        end = clock();
+        tgpu = (float) (end - start) * 1000 / (float)CLOCKS_PER_SEC / 4000;
+
+        copyNetworkFromGPU(net_d, &gnet);
+
+        printf("%d Layer Training Timing (ms):\n", layers);
+        printf("CPU: %.3f, GPU %.3f, Speedup: %.3f\n\n", tcpuTrain, tgpuTrain, tcpuTrain / tgpuTrain);
+
+        printf("%d Layer Inference Timing (ms):\n", layers);
+        printf("CPU: %.3f, GPU %.3f, Speedup: %.3f\n\n\n", tcpu, tgpu, tcpu / tgpu);
+
+
+        freeNetwork(&net);
+        freeNetwork(&gnet);
+        freeNetworkGPU(net_d);
+        free(layerSizes);
+    }
+    for(int i = 0; i < 128; i++) {
+        free(inputs[i]);
     }
 }
 
@@ -191,12 +249,11 @@ void demo() {
 }
 
 int main(int argc, char** argv) {
-    if(argc > 0){
-        if(strcmp(argv[0], "speedup")) {
-            demo();
-        } else {
-            speedupTest();
-        }
+    printf("CUDA Predictive Coding\n");
+    if(argc > 1 && strcmp(argv[0], "speedup")){
+        demo();
+    } else {
+        speedupTest();
     }
 
 }
