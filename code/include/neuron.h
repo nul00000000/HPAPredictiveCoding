@@ -5,8 +5,8 @@
 #include <stdio.h>
 #include <math.h>
 
-#define IR (0.01)
-#define LR (0.1)
+#define IR (0.01f)
+#define LR (0.1f)
 
 #define RMIN (0.4f)
 #define RRANGE (0.2f)
@@ -76,17 +76,16 @@ void generateOutput(Network* network, int numIters);
 
 //GPU stuff
 
-NetworkGPU* createNetworkGPU();
-void freeNetworkGPU(NetworkGPU* network);
+void freeNetworkGPU(NetworkGPU network);
 void copyNetworkToGPU(Network* from, NetworkGPU* to);
-void copyNetworkFromGPU(NetworkGPU* from, Network* to);
+void copyNetworkFromGPU(NetworkGPU from, Network* to);
 
-void setNetworkInputsGPU(NetworkGPU* network, float* inputs);
-void setNetworkOutputsGPU(NetworkGPU* network, float* outputs);
-void randomizeNetworkLatentsGPU(NetworkGPU* network);
+void setNetworkInputsGPU(NetworkGPU network, float* inputs);
+void setNetworkOutputsGPU(NetworkGPU network, float* outputs);
+void randomizeNetworkLatentsGPU(NetworkGPU network);
 
-void trainNetworkGPU(NetworkGPU* network, float** inputs, int numSamples, int numLearnIters, int numInferIters);
-void evaluateNetworkGPU(NetworkGPU* network, float* inputs, float* output, int numIters);
-void generateOutputGPU(NetworkGPU* network, int numIters);
+void trainNetworkGPU(NetworkGPU network, float** inputs, int numSamples, int numLearnIters, int numInferIters);
+void evaluateNetworkGPU(NetworkGPU network, float* inputs, float* output, int numIters);
+void generateOutputGPU(NetworkGPU network, int numIters);
 
 #endif

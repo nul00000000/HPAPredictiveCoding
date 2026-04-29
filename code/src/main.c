@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 #include "neuron.h"
 #include "lodepng.h"
+#include "time.h"
 
 //assumes 32x32
 int decode(const char* filename, float* imagef) {
@@ -88,7 +90,7 @@ int main() {
     int layerSizes[4] = {32*32, 100, 20, 5};
     initNetwork(layerSizes, 4, &network);
     
-    for(int i = 0; i < 0; i++) {
+    for(int i = 0; i < 3; i++) {
         trainNetwork(&network, images, 1, 100, 100);
         printf("Gen %d Loss: %f\n", i * 100, getLoss(&network));
         
@@ -104,7 +106,15 @@ int main() {
         encode(name, imageout);
     }
 
+    float tcpu;
+    float tgpu;
+    clock_t start;
+    clock_t end;
+
+    start = clock();
     generateOutput(&network, 4000);
+    end = clock();
+    tcpu = (float) (end - start) * 1000 / (float)CLOCKS_PER_SEC;
 
     for(int i = 0; i < 32; i++) {
         for(int j = 0; j < 32; j++) {
@@ -113,23 +123,23 @@ int main() {
     }
     encode("../obamasout/final.png", imageout);
 
-    printf("1\n\n");
-    fflush(stdout);
     randomizeNetworkLatents(&network);
-    printf("2\n\n");
-    fflush(stdout);
-    NetworkGPU* gnet = createNetworkGPU();
-    printf("3\n\n");
-    fflush(stdout);
-    copyNetworkToGPU(&network, gnet);
-    printf("4\n\n");
-    fflush(stdout);
+    NetworkGPU gnet;
+    
+    copyNetworkToGPU(&network, &gnet);
     generateOutputGPU(gnet, 4000);
-    printf("5\n\n");
-    fflush(stdout);
     copyNetworkFromGPU(gnet, &network);
-    printf("6\n\n");
-    fflush(stdout);
+    
+    start = clock();
+    for(int i = 0; i < 10; i++) {
+        copyNetworkToGPU(&network, &gnet);
+        generateOutputGPU(gnet, 4000);
+        copyNetworkFromGPU(gnet, &network);
+    }
+    end = clock();
+    tgpu = (float) (end - start) * 1000 / (float)CLOCKS_PER_SEC / 10;
+
+    printf("CPU: %.3f, GPU: %.3f, Speedup: %.3f\n", tcpu, tgpu, tcpu/tgpu);
 
     for(int i = 0; i < 32; i++) {
         for(int j = 0; j < 32; j++) {
