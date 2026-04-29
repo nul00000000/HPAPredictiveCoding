@@ -146,9 +146,9 @@ void speedupTest() {
 
 void demo() {
     float* images[16];
-    float* imageout = (float*) malloc(32 * 32, sizeof(float));
+    float* imageout = (float*) malloc(32 * 32 * sizeof(float));
     for(int i = 0; i < 16; i++) {
-        images[i] = (float*) malloc(32 * 32, sizeof(float));
+        images[i] = (float*) malloc(32 * 32 * sizeof(float));
         char name[30];
         sprintf(name, "../obamas/%da.png", i + 1);
         decode(name, images[i]);
