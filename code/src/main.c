@@ -89,12 +89,34 @@ int main() {
     Network network;
     int layerSizes[4] = {32*32, 100, 20, 5};
     initNetwork(layerSizes, 4, &network);
+    randomizeNetworkLatents(&network);
     
-    for(int i = 0; i < 3; i++) {
-        trainNetwork(&network, images, 1, 100, 100);
+    // for(int i = 0; i < 3; i++) {
+    //     trainNetwork(&network, images, 1, 100, 100);
+    //     printf("Gen %d Loss: %f\n", i * 100, getLoss(&network));
+        
+    //     generateOutput(&network, 4000);
+
+    //     for(int i = 0; i < 32; i++) {
+    //         for(int j = 0; j < 32; j++) {
+    //             imageout[i * 32 + j] = network.layers[0].lower[i * 32 + j].x;
+    //         }
+    //     }
+    //     char name[30];
+    //     sprintf(name, "../obamasout/%03d.png", i);
+    //     encode(name, imageout);
+    // }
+
+    NetworkGPU gnet;
+    copyNetworkToGPU(&network, &gnet);
+    for(int i = 0; i < 15; i++) {
+        trainNetworkGPU(gnet, images, 1, 400, 100);
+        copyNetworkFromGPU(gnet, &network);
+
         printf("Gen %d Loss: %f\n", i * 100, getLoss(&network));
         
-        generateOutput(&network, 4000);
+        generateOutputGPU(gnet, 4000);
+        copyNetworkFromGPU(gnet, &network);
 
         for(int i = 0; i < 32; i++) {
             for(int j = 0; j < 32; j++) {
@@ -124,7 +146,6 @@ int main() {
     encode("../obamasout/final.png", imageout);
 
     randomizeNetworkLatents(&network);
-    NetworkGPU gnet;
     
     copyNetworkToGPU(&network, &gnet);
     generateOutputGPU(gnet, 4000);

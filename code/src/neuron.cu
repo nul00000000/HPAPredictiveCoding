@@ -2,7 +2,6 @@ extern "C" {
 #include "neuron.h"
 }
 #include "curand_kernel.h"
-#include <cstdio>
 #include <cstdlib>
 
 __device__ float f_d(float x) {
@@ -53,7 +52,7 @@ __global__ void updateNetworkInferenceGPU(NetworkGPU network, char updateInputs)
 	}
 
 	int layerIndex = 0;
-	for(int j = 0; j < network.numLayers; j++) {
+	for(int j = network.numLayers - 1; j >= 0; j--) {
 		if(i >= network.layerOffsets[j]) {
 			layerIndex = j;
 			break;
@@ -81,7 +80,7 @@ __global__ void updateNetworkWeightsGPU(NetworkGPU network) {
 	}
 
 	int layerIndex = 0;
-	for(int j = 0; j < network.numLayers; j++) {
+	for(int j = network.numLayers - 1; j >= 0; j--) {
 		if(i >= network.layerOffsets[j]) {
 			layerIndex = j;
 			break;
@@ -119,55 +118,14 @@ __global__ void __randomizeNetworkLatentsGPU(NetworkGPU network) {
 	network.neurons[i].x = curand_uniform(&((curandState*) network.randStates)[i]) * RRANGE + RMIN;
 }
 
-__global__ void inferenceIters(NetworkGPU network, int numIters, char updateInputs) {
-	int i = blockIdx.x * blockDim.x + threadIdx.x;
+__global__ void __setNetworkInputs(NetworkGPU network, float* input) {
+	int i = threadIdx.x + blockIdx.x * blockDim.x;
 
-	if(i >= network.numNeurons) {
+	if(i >= network.layerSizes[0]) {
 		return;
 	}
 
-	int layerIndex = 0;
-	for(int j = 0; j < network.numLayers; j++) {
-		if(i >= network.layerOffsets[j]) {
-			layerIndex = j;
-			break;
-		}
-	}
-	int inLayerIndex = i - network.layerOffsets[layerIndex];
-
-	__syncthreads();
-	for(int k = 0; k < numIters; k++) {
-		//update network
-		network.neurons[i].a = 0;
-		network.neurons[i].xh = 0;
-		if(layerIndex < network.numLayers - 1) {
-			for(int j = 0; j < network.layerSizes[layerIndex + 1]; j++) {
-				int nIndex = network.layerOffsets[layerIndex + 1] + j;
-				int wIndex = network.weightOffsets[layerIndex] + inLayerIndex * network.layerSizes[layerIndex + 1] + j;
-				float cont = network.neurons[nIndex].x * network.weights[wIndex];
-				network.neurons[i].a += cont;
-			}
-		}
-
-		network.neurons[i].xh = f_d(network.neurons[i].a);
-		network.neurons[i].err = network.neurons[i].x - network.neurons[i].xh;
-
-		__syncthreads();
-
-		//update inference
-		if(layerIndex > 0) {
-			float n = 0;
-			for(int j = 0; j < network.layerSizes[layerIndex - 1]; j++) {
-				float h = dfdx_d(network.neurons[network.layerOffsets[layerIndex - 1] + j].a) * network.neurons[network.layerOffsets[layerIndex - 1] + j].err;
-				n += network.weights[network.weightOffsets[layerIndex - 1] + j * network.layerSizes[layerIndex] + inLayerIndex] * h;
-			}
-			network.neurons[i].x -= IR * (network.neurons[i].err - n);
-		} else if(updateInputs) {
-			network.neurons[i].x -= IR * (network.neurons[i].err);
-		}
-
-		__syncthreads();
-	}
+	network.neurons[i].x = input[i];
 }
 
 extern "C"
@@ -253,9 +211,38 @@ void copyNetworkFromGPU(NetworkGPU from, Network* to) {
 	}
 }
 
+// void setNetworkInputsGPU(NetworkGPU network, float* inputs) {
+
+// }
+
+// void setNetworkOutputsGPU(NetworkGPU network, float* outputs) {
+
+// }
+
 extern "C"
 void trainNetworkGPU(NetworkGPU network, float** inputs, int numSamples, int numLearnIters, int numInferIters) {
-
+	dim3 grid = dim3((network.numNeurons + 511) / 512);
+	dim3 block = dim3(512);
+	for(int i = 0; i < numLearnIters; i++) {
+		int c = rand() % numSamples;
+		__randomizeNetworkLatentsGPU<<<grid, block>>>(network);
+		cudaDeviceSynchronize();
+		for(int j = 0; j < numInferIters; j++) {
+			__setNetworkInputs<<<grid, block>>>(network, inputs[c]);
+			cudaDeviceSynchronize();
+			updateNetworkGPU<<<grid, block>>>(network);
+			cudaDeviceSynchronize();
+			updateNetworkInferenceGPU<<<grid, block>>>(network, 0);
+			cudaDeviceSynchronize();
+		}
+		//test if this is needed
+		__setNetworkInputs<<<grid, block>>>(network, inputs[c]);
+		cudaDeviceSynchronize();
+		updateNetworkGPU<<<grid, block>>>(network);
+		cudaDeviceSynchronize();
+		updateNetworkWeightsGPU<<<grid, block>>>(network);
+		cudaDeviceSynchronize();
+	}
 }
 
 extern "C"
@@ -269,14 +256,12 @@ void generateOutputGPU(NetworkGPU network, int numIters) {
 	dim3 block = dim3(512);
 	__randomizeNetworkLatentsGPU<<<grid, block>>>(network);
 	cudaDeviceSynchronize();
-	printf("\n");
 	for(int i = 0; i < numIters; i++) {
 		// printf("\rGenerating: %5d/%d", i + 1, numIters);
 		updateNetworkGPU<<<grid, block>>>(network);
 		cudaDeviceSynchronize();
 
-		updateNetworkInferenceGPU<<<grid, block>>>(network, true);
+		updateNetworkInferenceGPU<<<grid, block>>>(network, 1);
 		cudaDeviceSynchronize();
 	}
-	printf("\nDone Generating!\n");
 }
