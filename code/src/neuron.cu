@@ -30,6 +30,10 @@ __global__ void updateNetworkGPU(NetworkGPU network) {
 	}
 	int inLayerIndex = i - network.layerOffsets[layerIndex];
 
+	if(layerIndex >= network.numLayers - 1) {
+		return;
+	}
+
 	network.neurons[i].a = 0;
 	if(layerIndex < network.numLayers - 1) {
 		for(int j = 0; j < network.layerSizes[layerIndex + 1]; j++) {
@@ -73,28 +77,39 @@ __global__ void updateNetworkInferenceGPU(NetworkGPU network, char updateInputs)
 }
 
 __global__ void updateNetworkWeightsGPU(NetworkGPU network) {
-	int i = blockIdx.x * blockDim.x + threadIdx.x;
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
 
-	if(i >= network.numNeurons) {
-		return;
-	}
+    if(i >= network.numNeurons) {
+        return;
+    }
 
-	int layerIndex = 0;
-	for(int j = network.numLayers - 1; j >= 0; j--) {
-		if(i >= network.layerOffsets[j]) {
-			layerIndex = j;
-			break;
-		}
-	}
-	int inLayerIndex = i - network.layerOffsets[layerIndex];
+    int layerIndex = 0;
+    for(int j = network.numLayers - 1; j >= 0; j--) {
+        if(i >= network.layerOffsets[j]) {
+            layerIndex = j;
+            break;
+        }
+    }
 
-	if(layerIndex < network.numLayers - 1) {
-		for(int j = 0; j < network.layerSizes[layerIndex + 1]; j++) {
-			float h = dfdx_d(network.neurons[network.layerOffsets[layerIndex] + j].a) * network.neurons[network.layerOffsets[layerIndex] + j].err;
-			network.weights[network.weightOffsets[layerIndex] + inLayerIndex * network.layerSizes[layerIndex + 1] + j] +=
-					LR * h * network.neurons[network.layerOffsets[layerIndex + 1] + j].x;
-		}
-	}
+    int inLayerIndex = i - network.layerOffsets[layerIndex];
+
+    if(layerIndex < network.numLayers - 1) {
+        int currOffset = network.layerOffsets[layerIndex];
+        int nextOffset = network.layerOffsets[layerIndex + 1];
+        int nextSize = network.layerSizes[layerIndex + 1];
+
+        float h = dfdx_d(network.neurons[currOffset + inLayerIndex].a)
+                * network.neurons[currOffset + inLayerIndex].err;
+
+        for(int j = 0; j < nextSize; j++) {
+            int wIndex = network.weightOffsets[layerIndex]
+                       + inLayerIndex * nextSize
+                       + j;
+
+            network.weights[wIndex] +=
+                LR * h * network.neurons[nextOffset + j].x;
+        }
+    }
 }
 
 
