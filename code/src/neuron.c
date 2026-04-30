@@ -34,6 +34,8 @@ void initNetwork(int* layerSizes, int numLayers, Network* network) {
 }
 
 void freeLayer(Layer* layer) {
+    printf("i hate this place %p %p\n", layer->lower, layer->weights);
+    fflush(stdout);
     free(layer->lower);
     free(layer->weights);
 }
