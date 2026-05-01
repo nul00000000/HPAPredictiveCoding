@@ -165,7 +165,7 @@ void demo() {
     encode("../obamasout/avg.png", imageout);
 
     Network network;
-    int layerSizes[4] = {32*32, 100, 20, 5};
+    int layerSizes[4] = {32*32, 32*8, 32*2, 16};
     initNetwork(layerSizes, 4, &network);
     randomizeNetworkLatents(&network);
     
@@ -187,8 +187,8 @@ void demo() {
 
     NetworkGPU gnet;
     copyNetworkToGPU(&network, &gnet);
-    for(int i = 0; i < 15; i++) {
-        trainNetworkGPU(gnet, images, 32*32, 1, 400, 100);
+    for(int i = 0; i < 128; i++) {
+        trainNetworkGPU(gnet, images, 32*32, 16, 400, 100);
         copyNetworkFromGPU(gnet, &network);
 
         printf("Gen %d Loss: %f\n", i * 100, getLoss(&network));
@@ -257,10 +257,10 @@ void demo() {
 
 int main(int argc, char** argv) {
     printf("CUDA Predictive Coding\n");
-    if(argc > 1 && strcmp(argv[0], "speedup")){
-        demo();
-    } else {
+    if(argc > 1 && !strncmp(argv[1], "speedup", 7)){
         speedupTest();
+    } else {
+        demo();
     }
 
 }
