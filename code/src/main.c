@@ -82,7 +82,7 @@ void speedupTest() {
             inputs[i][j] = cosf((float) (j + i) / 128.0f * 3.14159f * 2);
         }
     }
-    for(int k = 0; k < 10; k++) {
+    for(int k = 0; k < 16; k++) {
         int layers = 2 << k;
         int* layerSizes = malloc(sizeof(int) * layers);
         for(int i = 0; i < layers; i++) {
@@ -104,26 +104,31 @@ void speedupTest() {
         float tgpuTrain;
         clock_t start;
         clock_t end;
+
+        int iters = 128 >> k;
+        if(iters <= 1) {
+            iters = 2;
+        }
         
         start = clock();
-        trainNetwork(&net, inputs, 128, 100, 100);
+        trainNetwork(&net, inputs, 128, iters, 100);
         end = clock();
-        tcpuTrain = (float) (end - start) * 1000 / (float)CLOCKS_PER_SEC / 100;
+        tcpuTrain = (float) (end - start) * 1000 / (float)CLOCKS_PER_SEC / iters;
         
         start = clock();
-        trainNetworkGPU(net_d, inputs, 128, 128, 100, 100);
+        trainNetworkGPU(net_d, inputs, 128, 128, iters, 100);
         end = clock();
-        tgpuTrain = (float) (end - start) * 1000 / (float)CLOCKS_PER_SEC / 100;
+        tgpuTrain = (float) (end - start) * 1000 / (float)CLOCKS_PER_SEC / iters;
         
         start = clock();
-        generateOutput(&net, 4000);
+        generateOutput(&net, iters);
         end = clock();
-        tcpu = (float) (end - start) * 1000 / (float)CLOCKS_PER_SEC / 4000;
+        tcpu = (float) (end - start) * 1000 / (float)CLOCKS_PER_SEC / iters;
 
         start = clock();
-        generateOutputGPU(net_d, 4000);
+        generateOutputGPU(net_d, iters);
         end = clock();
-        tgpu = (float) (end - start) * 1000 / (float)CLOCKS_PER_SEC / 4000;
+        tgpu = (float) (end - start) * 1000 / (float)CLOCKS_PER_SEC / iters;
 
         copyNetworkFromGPU(net_d, &gnet);
 

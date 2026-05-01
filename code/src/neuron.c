@@ -1,4 +1,5 @@
 #include "neuron.h"
+#include <stdio.h>
 #include <stdlib.h>
 
 void initNeuron(Neuron* n) {
@@ -21,6 +22,8 @@ void initLayer(int numUpper, int numLower, Layer* layer) {
         for(int i = 0; i < numUpper * numLower; i++) {
             layer->weights[i] = ((float) rand() / RAND_MAX) * 2.0f - 1.0f;
         }
+    } else {
+        layer->weights = NULL;
     }
 }
 
@@ -34,10 +37,8 @@ void initNetwork(int* layerSizes, int numLayers, Network* network) {
 }
 
 void freeLayer(Layer* layer) {
-    printf("i hate this place %p %p\n", layer->lower, layer->weights);
-    fflush(stdout);
     free(layer->lower);
-    free(layer->weights);
+    if(layer->weights != NULL) free(layer->weights);
 }
 
 void freeNetwork(Network* network) {

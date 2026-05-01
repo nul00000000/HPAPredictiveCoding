@@ -218,8 +218,10 @@ void copyNetworkFromGPU(NetworkGPU from, Network* to) {
 	for(int i = 0; i < to->numLayers; i++) {
 		cudaMemcpy(to->layers[i].lower, from.neurons + neuronIndex, 
 			sizeof(Neuron) * to->layers[i].numLower, cudaMemcpyDeviceToHost);
-		cudaMemcpy(to->layers[i].weights, from.weights + weightIndex, 
-			sizeof(float) * to->layers[i].numLower * to->layers[i].numUpper, cudaMemcpyDeviceToHost);
+		if(to->layers[i].numLower * to->layers[i].numUpper > 0) {
+			cudaMemcpy(to->layers[i].weights, from.weights + weightIndex, 
+				sizeof(float) * to->layers[i].numLower * to->layers[i].numUpper, cudaMemcpyDeviceToHost);
+		}
 		// memset(to->layers[i].lower, 0, sizeof(Neuron) * to->layers[i].numLower);
 		neuronIndex += to->layers[i].numLower;
 		weightIndex += to->layers[i].numLower * to->layers[i].numUpper;
