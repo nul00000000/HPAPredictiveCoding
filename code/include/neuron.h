@@ -11,10 +11,17 @@
 #define RMIN (0.4f)
 #define RRANGE (0.2f)
 
+#define SPIKE_THRESHOLD (1.0f)
+#define SPIKE_MAG (1.0f)
+#define REFRACTORY_PERIOD (1.0f)
+
+#define TIMESTEP (0.5f)
+
 typedef struct {
     float a;
     float xh; //x hat, prediction of x
     float x; //latent value or input
+    float s; //membrane potential
     float err; //error
 } Neuron;
 
@@ -75,7 +82,7 @@ void evaluateNetwork(Network* network, float* inputs, float* output, int numIter
 void generateOutput(Network* network, int numIters);
 
 //GPU stuff
-
+/*
 void freeNetworkGPU(NetworkGPU network);
 void copyNetworkToGPU(Network* from, NetworkGPU* to);
 void copyNetworkFromGPU(NetworkGPU from, Network* to);
@@ -87,5 +94,5 @@ void randomizeNetworkLatentsGPU(NetworkGPU network);
 void trainNetworkGPU(NetworkGPU network, float** inputs, int inputSize, int numSamples, int numLearnIters, int numInferIters);
 void evaluateNetworkGPU(NetworkGPU network, float* inputs, float* output, int numIters);
 void generateOutputGPU(NetworkGPU network, int numIters);
-
+*/
 #endif

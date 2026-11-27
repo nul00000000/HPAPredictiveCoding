@@ -7,6 +7,7 @@ void initNeuron(Neuron* n) {
     n->err = 0;
     n->xh = 0;
     n->x = ((float) rand() / RAND_MAX);
+    n->s = 0;
 }
 
 void initLayer(int numUpper, int numLower, Layer* layer) {

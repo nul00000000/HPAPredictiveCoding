@@ -1,13 +1,11 @@
-FILES = src/main.c src/neuron.c src/lodepng.c src/neuron.cu
+FILES = src/main.c src/neuron.c src/lodepng.c src/spikeneuron.c
 INCLUDE = include
 OUT = main
-
-include extra.make
 
 all: $(OUT)
 
 $(OUT): $(FILES)
-	nvcc -ccbin $(CCBIN) -o $(OUT) $(FILES) -Iinclude -lm
+	gcc -o $(OUT) $(FILES) -Iinclude -lm
 
 run: $(OUT)
 	./$(OUT) > output/out.txt
