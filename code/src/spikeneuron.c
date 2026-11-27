@@ -84,6 +84,7 @@ void createSpikes(SpikeNetwork* network) {
     }
 }
 
+//test
 void updateSpikeNetwork(SpikeNetwork* network) {
     processSpikes(network);
     createSpikes(network);
